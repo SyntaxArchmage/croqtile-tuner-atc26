@@ -1,0 +1,77 @@
+{
+  "source": "csur-dsl-ai-tuning/paper/main.tex, Table tab:dsl-overview",
+  "definition": "Year = first publication or public release of the DSL/framework",
+  "total": 46,
+  "by_year": {
+    "2013": [
+      "Halide"
+    ],
+    "2015": [
+      "Lift"
+    ],
+    "2017": [
+      "CUTLASS/CuTe",
+      "TACO"
+    ],
+    "2018": [
+      "TVM",
+      "Tensor Compr."
+    ],
+    "2019": [
+      "Tiramisu",
+      "Triton"
+    ],
+    "2020": [
+      "Ansor",
+      "BANG",
+      "RISE"
+    ],
+    "2021": [
+      "AKG",
+      "CoRa",
+      "MLIR"
+    ],
+    "2022": [
+      "AscendC",
+      "Exo",
+      "IREE",
+      "SparTA",
+      "TopsCC"
+    ],
+    "2023": [
+      "Hidet",
+      "Mojo"
+    ],
+    "2024": [
+      "FlagTree",
+      "Pallas",
+      "ThunderKittens"
+    ],
+    "2025": [
+      "CUDA Tile",
+      "CroqTile",
+      "CuTe DSL",
+      "Cypress",
+      "FlexAttention",
+      "Gluon",
+      "Helion",
+      "HipKittens",
+      "ML-Triton",
+      "TileLang",
+      "Twill"
+    ],
+    "2026": [
+      "Argus",
+      "Flashlight",
+      "Insum",
+      "Nautilus",
+      "ParallelKittens",
+      "Prism",
+      "TLX",
+      "Tawa",
+      "Tilus",
+      "Wave",
+      "μCUTLASS"
+    ]
+  }
+}

@@ -2,17 +2,20 @@
 """Generate the two Background-slide figures with matplotlib.
 
 Left  : operator-optimization papers per year, 2013-2026 (line + area).
-Right : the 46 DSLs on a time x abstraction-tier bubble chart, numbered to
-        match the full index printed under the two panels.
+Right : DSLs first released per year, with that year's names stacked at the
+        marker so the chart doubles as the index.
 
 Data
   figures/data/corpus-trend.json  paper counts by year
   figures/data/dsl-timeline.json  first publication / public release year
   figures/data/dsl-tiers.json     qualitative abstraction tier + board order
 
-The abstraction axis is a qualitative taxonomy, not a measured quantity:
+The abstraction tier is a qualitative taxonomy, not a measured quantity:
   1 intrinsics/threads -> 2 C++ templates -> 3 tile DSLs
   -> 4 tensor/operator DSLs -> 5 agent-native
+Within one year the names stack from tier 1 upward, so each column reads as
+the abstraction ladder of that year; the tier key is printed under the left
+panel in index.html.
 
 Run:
     python3 figures/make_background_figures.py
@@ -30,7 +33,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import font_manager as fm
-from matplotlib.patches import FancyArrowPatch
+from matplotlib import patheffects as pe
 
 HERE = pathlib.Path(__file__).resolve().parent
 DATA = HERE / "data"
@@ -81,7 +84,6 @@ plt.rcParams.update({
     "figure.facecolor": PAPER,
 })
 
-
 def load_data():
     trend = json.loads((DATA / "corpus-trend.json").read_text())
     timeline = json.loads((DATA / "dsl-timeline.json").read_text())
@@ -108,16 +110,15 @@ def load_data():
         raise ValueError("numbers must be 1..N")
     return years, papers, trend, entries
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 # Left figure — papers per year
 # ═══════════════════════════════════════════════════════════════════════════
 
 def make_papers_line(years, papers, total):
-    # 480 x 291 display px; 1 pt == 1 display px in this convention.
-    W, H = 487, 225
+    # 600 x 150 source px, displayed at the bottom-right of the slide.
+    W, H = 600, 150
     fig = plt.figure(figsize=(W / 72, H / 72), dpi=100)
-    ax = fig.add_axes([0.085, 0.155, 0.89, 0.765])
+    ax = fig.add_axes([0.07, 0.19, 0.91, 0.74])
 
     x = np.asarray(years)
     y = np.asarray(papers)
@@ -129,28 +130,28 @@ def make_papers_line(years, papers, total):
     ax.plot(x, y, color=ACCENT, lw=2.4, solid_capstyle="round",
             solid_joinstyle="round", zorder=3)
 
-    normal = y < 32
-    ax.scatter(x[normal], y[normal], s=16, facecolor=PAPER, edgecolor=ACCENT,
+    # Filled markers from 2024 on: the ramp's head, not just its tail.
+    ramp = y >= 32
+    ax.scatter(x[~ramp], y[~ramp], s=16, facecolor=PAPER, edgecolor=ACCENT,
                linewidth=1.15, zorder=4)
-    hot = ~normal
-    ax.scatter(x[hot], y[hot], s=32, facecolor=ACCENT_DEEP,
+    ax.scatter(x[ramp], y[ramp], s=32, facecolor=ACCENT_DEEP,
                edgecolor=PAPER, linewidth=1.0, zorder=5)
 
-    # Selective direct labels: only the three surge years.
-    for year, value in zip(x[-3:], y[-3:]):
-        if year == 2024:
-            ax.annotate(f"{value}", (year, value), xytext=(-6, 7),
-                        textcoords="offset points", ha="right", va="bottom",
-                        fontsize=10.0, fontweight="bold", color=INK2, zorder=6)
-        else:
-            ax.annotate(f"{value}", (year, value), xytext=(0, 6),
+    # Number every data point; ramp years carry the emphasis.
+    for year, value, hot in zip(x, y, ramp):
+        if hot:
+            ax.annotate(f"{value}", (year, value), xytext=(0, 5),
                         textcoords="offset points", ha="center", va="bottom",
-                        fontsize=11.5, fontweight="bold", color=INK, zorder=6)
+                        fontsize=13, fontweight="bold", color=INK, zorder=6)
+        else:
+            ax.annotate(f"{value}", (year, value), xytext=(0, 4),
+                        textcoords="offset points", ha="center", va="bottom",
+                        fontsize=10, color=INK2, zorder=6)
 
     ax.set_xlim(2012.55, 2026.45)
-    ax.set_ylim(0, 92)
+    ax.set_ylim(0, 100)
     ax.set_yticks([0, 20, 40, 60, 80])
-    ax.set_xticks([2013, 2015, 2017, 2019, 2021, 2023, 2025, 2026])
+    ax.set_xticks(years)
 
     ax.grid(axis="y", color=GRID, lw=0.8)
     ax.set_axisbelow(True)
@@ -158,241 +159,125 @@ def make_papers_line(years, papers, total):
         ax.spines[side].set_visible(False)
     ax.spines["bottom"].set_color(INK3)
     ax.spines["bottom"].set_linewidth(0.9)
-    ax.tick_params(axis="both", length=0, pad=4, labelsize=9.2, colors=INK2)
+    ax.tick_params(axis="both", length=0, pad=4, labelsize=11.5, colors=INK2)
     for label in ax.get_xticklabels():
         if label.get_text() in ("2025", "2026"):
             label.set_color(INK)
             label.set_fontweight("bold")
 
-    ax.text(0.0, 1.035, "papers / year", transform=ax.transAxes,
-            fontsize=8.4, color=INK3, ha="left", va="bottom")
-    recent = sum(v for year, v in zip(years, papers) if year >= 2024)
-    ax.text(2013.05, 89.0, f"2024–26: {recent} of {total} papers",
-            fontsize=9.0, color=INK2, ha="left", va="top")
-    ax.text(2026.42, 3.0, "2026 partial", fontsize=7.8, color=INK3,
+    ax.text(2012.75, 98.0, "papers / year", fontsize=13, color=INK3,
+            ha="left", va="top")
+    ax.text(2026.42, 3.0, "2026 partial", fontsize=11.5, color=INK3,
             ha="right", va="bottom")
 
     fig.savefig(OUT / "papers-line.svg", format="svg", facecolor=PAPER)
     fig.savefig(OUT / "papers-line.png", dpi=300, facecolor=PAPER)
     plt.close(fig)
 
-
 # ═══════════════════════════════════════════════════════════════════════════
-# Right figure — DSL bubbles
+# Right figure — DSLs per year, names stacked at each marker
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _group_offsets(k, r):
-    """Return pixel offsets for k bubbles in one (year, tier) cell."""
-    d = 2 * r + 1.9
-    if k == 1:
-        return [(0.0, 0.0)]
-    if k == 2:
-        return [(-d / 2, 0.0), (d / 2, 0.0)]
-    if k == 3:
-        return [(-d, 0.0), (0.0, 0.0), (d, 0.0)]
-    rows = 2 if k <= 4 else 3
-    counts = [k // rows + (1 if i < k % rows else 0) for i in range(rows)]
-    dy = 2 * r + 1.9
-    out = []
-    for ri, count in enumerate(counts):
-        for ci in range(count):
-            out.append(((ci - (count - 1) / 2) * d,
-                        (ri - (rows - 1) / 2) * dy))
-    return out
+def make_dsl_line(entries):
+    """Line chart of DSLs first released per year; names stack at each marker."""
+    by_year = {}
+    for e in entries:
+        by_year.setdefault(e["year"], []).append(e)
 
+    all_years = list(range(2013, 2027))
+    counts = [len(by_year.get(y, [])) for y in all_years]
 
-def _spring_layout(entries, ax, base_r_px):
-    """Place bubbles near (year, tier); repel overlaps, keep tier bands."""
-    fig = ax.figure
-    fig.canvas.draw()
-
-    year_px = {y: ax.transData.transform((y, 1))[0] for y in
-               range(2013, 2027)}
-    slot = np.median(np.diff([year_px[y] for y in range(2013, 2027)]))
-    tier_px = {t: ax.transData.transform((2013, t))[1] for t in range(1, 6)}
-    band = np.median(np.diff([tier_px[t] for t in range(1, 6)]))
-
-    def _rmul(e):
-        if e["name"] == "TileLang":
-            return 1.0
-        return 1.35 if e.get("milestone") else 1.0
-
-    radii = np.array([base_r_px * _rmul(e) for e in entries])
-    base = np.array([(year_px[e["year"]], tier_px[e["tier"]]) for e in entries])
-
-    # Seed: a local honeycomb inside each (year, tier) cell.
-    pos = base.copy()
-    cells = {}
-    for i, e in enumerate(entries):
-        cells.setdefault((e["year"], e["tier"]), []).append(i)
-    for (year, tier), idxs in cells.items():
-        offs = _group_offsets(len(idxs), base_r_px)
-        for i, (dx, dy) in zip(idxs, offs):
-            pos[i] = (year_px[year] + dx, tier_px[tier] + dy)
-
-    # Relax: repulsion + weak spring back to the cell centre.
-    for _ in range(360):
-        pos += 0.010 * (base - pos)
-        for i in range(len(entries)):
-            for j in range(i + 1, len(entries)):
-                delta = pos[i] - pos[j]
-                dist = float(np.hypot(*delta))
-                min_dist = radii[i] + radii[j] + 1.0
-                if dist < min_dist:
-                    if dist < 1e-4:
-                        delta = np.array([1.0, 0.0])
-                        dist = 1.0
-                    push = (min_dist - dist) / dist * 0.5
-                    pos[i] += delta * push
-                    pos[j] -= delta * push
-        # Clamp: the year and the tier band remain readable.
-        for i, e in enumerate(entries):
-            pos[i, 0] = np.clip(pos[i, 0], year_px[e["year"]] - 0.95 * slot,
-                                year_px[e["year"]] + 0.95 * slot)
-            pos[i, 1] = np.clip(pos[i, 1], tier_px[e["tier"]] - 0.44 * band,
-                                tier_px[e["tier"]] + 0.44 * band)
-
-    inv = ax.transData.inverted()
-    return np.array([inv.transform(p) for p in pos])
-
-
-def make_dsl_bubbles(entries):
-    # 624 x 291 display px.
-    W, H = 617, 452
+    W, H = 1176, 262
     fig = plt.figure(figsize=(W / 72, H / 72), dpi=100)
-    ax = fig.add_axes([0.145, 0.155, 0.835, 0.765])
+    ax = fig.add_axes([0.055, 0.10, 0.94, 0.88])
 
-    ax.set_xlim(2012.45, 2026.55)
-    ax.set_ylim(0.5, 5.5)
+    x = np.array(all_years)
+    y = np.array(counts)
 
-    # Surge window + tier hairlines.
-    ax.axvspan(2024.5, 2026.5, color=ACCENT_TINT, alpha=0.55, lw=0, zorder=0)
-    for t in (1.5, 2.5, 3.5, 4.5):
-        ax.axhline(t, color=GRID, lw=0.8, zorder=0)
+    ax.axvspan(2024.5, 2027.95, color=ACCENT_TINT, alpha=0.55, lw=0, zorder=0)
+    ax.fill_between(x, y, 0, color=ACCENT_TINT, alpha=0.90, lw=0, zorder=1)
+    ax.plot(x, y, color=ACCENT, lw=2.4, solid_capstyle="round",
+            solid_joinstyle="round", zorder=3)
 
-    ax.set_yticks([1, 2, 3, 4, 5])
-    ax.set_yticklabels([TIER_LABELS[t] for t in range(1, 6)],
-                       fontsize=9.4, color=INK2)
-    ax.set_xticks(range(2013, 2027))
-    ax.set_xticklabels([str(y) for y in range(2013, 2027)],
-                       fontsize=8.4, color=INK2)
+    nonzero = y > 0
+    ax.scatter(x[nonzero], y[nonzero], s=32, facecolor=ACCENT_DEEP,
+               edgecolor=PAPER, linewidth=1.0, zorder=5)
+
+    ax.set_xlim(2012.55, 2027.95)
+    ax.set_xticks(all_years)
+    ax.set_xticklabels([str(v) for v in all_years], fontsize=16, color=INK2)
     for label in ax.get_xticklabels():
         if label.get_text() in ("2025", "2026"):
             label.set_color(INK)
             label.set_fontweight("bold")
 
-    ax.tick_params(axis="both", length=0, pad=3)
-    for side in ("top", "right", "left", "bottom"):
+    ax.set_ylim(0, 12)
+    ax.set_yticks([0, 2, 4, 6, 8, 10, 12])
+    ax.set_yticklabels(["0", "2", "4", "6", "8", "10", "12"],
+                       fontsize=16, color=INK2)
+
+    ax.grid(axis="y", color=GRID, lw=0.8)
+    ax.set_axisbelow(True)
+    for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
-    ax.set_ylabel("abstraction", fontsize=8.6, color=INK2, labelpad=2)
-    ax.yaxis.set_label_coords(-0.108, 0.5)
+    ax.spines["bottom"].set_color(INK3)
+    ax.spines["bottom"].set_linewidth(0.9)
+    ax.tick_params(axis="both", length=0, pad=3, labelsize=16, colors=INK2)
 
-    base_r = 7.6
-    placed = _spring_layout(entries, ax, base_r)
+    ax.text(2012.75, 11.85, "DSLs first released / year",
+            fontsize=15, color=INK3, ha="left", va="top")
+    ax.text(2012.75, 11.0, "2026 partial", fontsize=12,
+            color=INK3, ha="left", va="top")
 
-    # Frontier: cumulative maximum tier; it steps up when agent-native lands.
-    max_tier = 0
-    frontier = {}
-    for year in range(2013, 2027):
-        max_tier = max([max_tier] + [e["tier"] for e in entries
-                                     if e["year"] == year])
-        frontier[year] = max_tier
-    step_x, step_y = [], []
-    prev = None
-    for year in range(2013, 2027):
-        level = frontier[year] + 0.42
-        if prev is None:
-            step_x.append(2012.75)
-            step_y.append(level)
-        elif level != prev:
-            step_x += [year, year]
-            step_y += [prev, level]
-        prev = level
-    step_x.append(2026.45)
-    step_y.append(prev)
-    ax.plot(step_x, step_y, color=ACCENT_TINT, lw=5.0, alpha=0.75,
-            zorder=1.8, solid_capstyle="round")
-    ax.plot(step_x, step_y, color=ACCENT_DEEP, lw=1.55, ls=(0, (3.6, 2.4)),
-            zorder=2, solid_capstyle="round")
-    ax.add_patch(FancyArrowPatch((2026.05, step_y[-1]), (2026.5, step_y[-1]),
-                                 arrowstyle="-|>", mutation_scale=8,
-                                 color=ACCENT_DEEP, lw=1.1, zorder=2))
-    ax.annotate("abstraction frontier", (2016.3, step_y[0]),
-                xytext=(0, 4.6), textcoords="offset points",
-                fontsize=8.9, color=ACCENT_DEEP, ha="left", va="bottom",
-                zorder=6)
-    ax.text(2026.45, 5.56, "22 of 46 DSLs in 2025–26",
-            fontsize=8.2, color=INK2, ha="right", va="bottom")
+    # A few columns sit a hair off-centre so adjacent-year names never touch.
+    shift = {2017: -0.10, 2019: 0.16, 2023: -0.14}
+    # The 2025–26 names are left-aligned in two index columns to the right of
+    # their markers: centred, the steep 2024→25 segment would run through them.
+    left = {2025: 0.02, 2026: 0.42}
 
-    # Bubbles: draw large milestones first so small ones sit on top.
-    order = sorted(range(len(entries)),
-                   key=lambda i: (entries[i].get("milestone", False),
-                                  entries[i]["n"]))
-    for i in order:
-        e = entries[i]
-        r = base_r * (1.0 if e["name"] == "TileLang"
-                      else (1.35 if e.get("milestone") else 1.0))
-        x, y = placed[i]
-        ax.scatter([x], [y], s=(2 * r) ** 2,
-                   facecolor=TIER_COLORS[e["tier"]],
-                   edgecolor=PAPER if not e.get("milestone") else ACCENT_DEEP,
-                   linewidth=0.55 if not e.get("milestone") else 1.2,
-                   zorder=4 if not e.get("milestone") else 5)
-        if e.get("milestone"):
-            ax.scatter([x], [y], s=(2 * r + 6) ** 2, facecolor="none",
-                       edgecolor=ACCENT_SOFT, linewidth=0.7, alpha=0.7,
-                       zorder=3)
-        ax.text(x, y, str(e["n"]), ha="center", va="center",
-                fontsize=8.8 if e.get("milestone") else 7.2,
-                fontweight="bold", color=TIER_TEXT[e["tier"]], zorder=6)
-
-    # Four milestone names with hairline leaders.
-    label_specs = {
-        "CUTLASS/CuTe": ((2014.55, 1.42), "left"),
-        "Triton": ((2019.55, 2.38), "left"),
-        "TileLang": ((2024.85, 2.55), "right"),
-        "CroqTile": ((2023.55, 4.82), "right"),
-    }
-    for e in entries:
-        if e["name"] not in label_specs:
+    # Names stacked at each marker, ordered by tier then board number.
+    # 2025–26 are the crowded columns: their names run below the marker.
+    for year in all_years:
+        if year not in by_year:
             continue
-        i = entries.index(e)
-        xy = placed[i]
-        xytext, ha = label_specs[e["name"]]
-        ax.annotate(e["name"], xy=xy, xytext=xytext, textcoords="data",
-                    ha=ha, va="center", fontsize=8.4,
-                    fontweight="bold" if e["name"] == "CroqTile" else "normal",
-                    color=ACCENT_DEEP if e["name"] == "CroqTile" else INK,
-                    arrowprops=dict(arrowstyle="-", color=ACCENT_SOFT,
-                                    lw=0.6, shrinkA=2, shrinkB=3),
-                    zorder=7)
+        names = sorted(by_year[year], key=lambda e: (e["tier"], e["n"]))
+        count = len(names)
+        below = year >= 2025
+        # Only years whose line climbs straight out of the marker need the
+        # paper halo: their names sit on top of the rising segment.
+        halo = year in (2019, 2021, 2023, 2024)
+        start = 6 if below else 4
+        step = 12.5
+        for i, e in enumerate(names):
+            if below:
+                offset, va = -(start + i * step), "top"
+                xy = (year + left[year], count)
+                ha = "left"
+            else:
+                offset, va = start + i * step, "bottom"
+                xy = (year + shift.get(year, 0.0), count)
+                ha = "center"
+            ax.annotate(e["name"], xy=xy,
+                        xytext=(0, offset), textcoords="offset points",
+                        ha=ha, va=va, fontsize=12,
+                        fontweight="bold" if e.get("milestone") else "normal",
+                        color=ACCENT_DEEP if e.get("milestone") else INK,
+                        path_effects=([pe.withStroke(linewidth=2.2,
+                                                     foreground=PAPER)]
+                                      if halo else None),
+                        zorder=6)
 
-    fig.savefig(OUT / "dsl-bubbles.svg", format="svg", facecolor=PAPER)
-    fig.savefig(OUT / "dsl-bubbles.png", dpi=300, facecolor=PAPER)
+    fig.savefig(OUT / "dsl-line.svg", format="svg", facecolor=PAPER)
+    fig.savefig(OUT / "dsl-line.png", dpi=300, facecolor=PAPER)
     plt.close(fig)
-
-
-def write_index_snippet(entries):
-    lines = []
-    for e in entries:
-        name = (e["name"].replace("&", "&amp;").replace("<", "&lt;")
-                .replace(">", "&gt;"))
-        lines.append(
-            f'        <span class="dsl-key-item t{e["tier"]}">'
-            f'<i></i><b>{e["n"]:02d}</b>{name}</span>'
-        )
-    (OUT / "dsl-key.html").write_text("\n".join(lines) + "\n")
-
 
 def main():
     years, papers, trend, entries = load_data()
     make_papers_line(years, papers, trend["total"])
-    make_dsl_bubbles(entries)
-    write_index_snippet(entries)
+    make_dsl_line(entries)
     print("wrote")
     for p in sorted(OUT.iterdir()):
         print(" ", p.name, p.stat().st_size)
-
 
 if __name__ == "__main__":
     main()

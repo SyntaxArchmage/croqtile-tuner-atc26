@@ -1,0 +1,19 @@
+<svg class="expert-loop" viewBox="0 0 700 400" role="img" aria-label="Bottleneck tuning loop: profile, analyse, propose, implement, compile and measure, then decide; one round repeats.">
+<circle class="ring" cx="350" cy="200" r="125"/>
+<circle class="dot" cx="350.0" cy="75.0" r="5"/>
+<path class="head" d="M431.6,104.8 L416.3,101.1 L423.4,91.4 Z"/>
+<g class="lbl"><text x="350" y="62" text-anchor="middle"><tspan class="num">01</tspan> profile</text></g>
+<circle class="dot" cx="468.9" cy="161.4" r="5"/>
+<path class="head" d="M465.8,248.1 L464.6,232.5 L476.0,236.2 Z"/>
+<g class="lbl"><text x="497" y="164" text-anchor="start"><tspan class="num">02</tspan> analyse</text></g>
+<circle class="dot" cx="423.5" cy="301.1" r="5"/>
+<path class="head" d="M340.0,325.0 L354.5,319.0 L354.5,331.0 Z"/>
+<g class="lbl"><text x="444" y="310" text-anchor="start"><tspan class="num">03</tspan> propose</text></g>
+<circle class="dot" cx="276.5" cy="301.1" r="5"/>
+<path class="head" d="M228.0,229.1 L238.2,241.1 L226.8,244.8 Z"/>
+<g class="lbl"><text x="256" y="310" text-anchor="end"><tspan class="num">04</tspan> implement</text></g>
+<circle class="dot" cx="231.1" cy="161.4" r="5"/>
+<path class="head" d="M284.6,93.0 L276.4,106.4 L269.4,96.7 Z"/>
+<g class="lbl"><text x="213" y="164" text-anchor="end"><tspan class="num">05</tspan> compile · measure</text></g>
+<g class="center"><text x="350" y="206" class="round">one round</text></g>
+</svg>

@@ -25,7 +25,7 @@ python3 figures/build_background_slide.py    # 把 SVG 内嵌回 index.html
 - `figures/data/dsl-timeline.json` · 46 个 DSL 的首次发布年份
 - `figures/data/dsl-tiers.json` · 每个 DSL 在抽象层级上的定性定位（含编号）
 
-`build_background_slide.py` 会整段重写第 2 页的 `<section>`，所以改文案/备注请同步改脚本；只改 CSS 不受影响。
+`build_background_slide.py` 只更新第 2 页的图表，保留文案和讲者备注。
 
 ## Ways of tuning kernels（第 5–7 页）
 
@@ -34,7 +34,7 @@ python3 figures/build_background_slide.py    # 把 SVG 内嵌回 index.html
 ```bash
 python3 figures/make_expert_loop.py      # -> figures/out/expert-loop.svg（第 5 页概念图）
 python3 figures/make_tuning_figures.py   # -> figures/out/search-space.svg/png
-python3 figures/build_tuning_slides.py   # 重写第 5–7 页的 <section>
+python3 figures/build_tuning_slides.py   # 更新第 5–6 页图表，保留文案/备注
 ```
 
 第 5 页的 loop 图是内联 SVG（配色/字体取自页面的 CSS 变量），第 6 页的搜索空间图由 matplotlib 生成。
@@ -46,3 +46,15 @@ python3 figures/make_operator_figure.py   # -> figures/out/operator-gflops.svg�
 ```
 
 生成后需把 SVG 重新内嵌到第 4 页的 `<img src>`（这一页是手写 section）。
+
+## Presentation polish
+
+All 19 pages use concise key points. The submitted paper used for verification is
+`../croqtile-tuner-paper/sigopsatc2026-35/sources/main.pdf`. Detailed explanations
+and evidence qualifications live in speaker notes (S). Slide IDs remain stable
+for figure refreshes; chart builders preserve authored copy.
+
+Rebuild the editable PowerPoint with `python3 tools/export_pptx.py`, then
+`python3 tools/postprocess_pptx.py dist/slides.pptx`. Requires Playwright,
+python-pptx and CairoSVG. Text and speaker notes remain editable; figures
+are embedded at twice their displayed resolution.

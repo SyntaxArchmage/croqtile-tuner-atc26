@@ -1,1 +1,243 @@
-[]
+{
+  "slides": [
+    {
+      "slide": "slide-01",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-02",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-03",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-04",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-05",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-06",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-07",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-08",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-09",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-10",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-11",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "notes": true
+    },
+    {
+      "slide": "slide-12",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "notes": true
+    },
+    {
+      "slide": "slide-13",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [
+        {
+          "x": 0,
+          "y": 21
+        }
+      ],
+      "notes": true
+    },
+    {
+      "slide": "slide-14",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-15",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-16",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-17",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-18",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    },
+    {
+      "slide": "slide-19",
+      "spill": [],
+      "brokenImages": 0,
+      "code": [],
+      "notes": true
+    }
+  ],
+  "tabs": [
+    {
+      "slide": "slide-11",
+      "tab": "Five constructs",
+      "selected": "Five constructs",
+      "code": 282,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-11",
+      "tab": "Full EBNF",
+      "selected": "Full EBNF",
+      "code": 762,
+      "x": 0,
+      "y": 202
+    },
+    {
+      "slide": "slide-12",
+      "tab": "CroqTile",
+      "selected": "CroqTile",
+      "code": 348,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-12",
+      "tab": "TileLang",
+      "selected": "TileLang",
+      "code": 564,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-12",
+      "tab": "CuTe / CUTLASS",
+      "selected": "CuTe / CUTLASS",
+      "code": 583,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-12",
+      "tab": "CUDA",
+      "selected": "CUDA",
+      "code": 527,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-13",
+      "tab": "CroqTile",
+      "selected": "CroqTile",
+      "code": 196,
+      "x": 0,
+      "y": 21
+    },
+    {
+      "slide": "slide-13",
+      "tab": "Triton",
+      "selected": "Triton",
+      "code": 425,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-13",
+      "tab": "TileLang",
+      "selected": "TileLang",
+      "code": 166,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-13",
+      "tab": "CuTe / CUTLASS",
+      "selected": "CuTe / CUTLASS",
+      "code": 392,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "slide": "slide-13",
+      "tab": "CUDA",
+      "selected": "CUDA",
+      "code": 549,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "browserErrors": []
+}

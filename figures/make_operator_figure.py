@@ -64,13 +64,18 @@ def main() -> None:
     ax = fig.add_axes([0.315, 0.145, 0.655, 0.735])
 
     ypos = np.arange(len(vals))
-    colors = [ACCENT] * 5 + [ACCENT_DEEP] * 2
-    ax.barh(ypos, vals, height=0.58, color=colors, zorder=3)
+    colors = ['#adc1b8'] * 5 + [ACCENT, '#ffffff']
+    bars = ax.barh(ypos, vals, height=0.48, color=colors, zorder=3)
+    bars[-1].set_edgecolor('#879e92')
+    bars[-1].set_linewidth(1.1)
+    bars[-1].set_linestyle((0, (4, 2)))
+    ax.axhspan(4.58, 5.42, color='#edf5f0', zorder=0)
     ax.invert_yaxis()
 
     for y, v in zip(ypos, vals):
         ax.text(v + 1.6, y, f"{v:g}", va="center", ha="left",
-                fontsize=14, fontweight="bold", color=INK, zorder=4)
+                fontsize=14, fontweight="bold" if y == 5 else 'normal',
+                color=ACCENT_DEEP if y == 5 else INK2, zorder=4)
 
     ax.set_xlim(0, 86)
     ax.set_ylim(len(vals) - 0.45, -0.55)
@@ -84,12 +89,12 @@ def main() -> None:
     ax.set_axisbelow(True)
     for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
-    ax.spines["bottom"].set_color(INK3)
-    ax.spines["bottom"].set_linewidth(0.9)
+    ax.spines["bottom"].set_visible(False)
 
-    ax.text(0.0, 1.025, "GFLOPs as optimizations stack",
+    ax.text(-0.44, 1.065, "Performance as optimizations combine",
             transform=ax.transAxes, fontsize=16, color=INK3,
             ha="left", va="bottom")
+    ax.set_xlabel('GFLOPs', color=INK2, fontsize=12, labelpad=8)
 
     fig.savefig(OUT / "operator-gflops.svg", format="svg", facecolor=PAPER)
     fig.savefig(OUT / "operator-gflops.png", dpi=300, facecolor=PAPER)

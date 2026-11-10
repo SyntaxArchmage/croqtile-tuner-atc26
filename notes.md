@@ -1,9 +1,5 @@
 # CroqTile · ATC'26 · 14-minute talk notes
 
-Timing includes short pauses and slide changes. Read the paragraphs as the script; bracketed cues are for delivery only. The voice follows the handwritten `../slides-craft/decks/academic/gemmsp-sc26/notes.md`.
-
-Approximately 1,800 spoken words. At 140 words per minute, this leaves about 70 seconds for pauses, pointing, and transitions within the 14-minute slot.
-
 ## P1 · Title · 0:00–0:20
 
 Hi everyone, I am Heng Shi, from Shanghai Enflame Intelligence and Shanghai Jiao Tong University. I am happy to be here to present our work on CroqTile, a new GPU programming language designed for autonomous kernel tuning. Let us start with the motivation.
@@ -88,19 +84,19 @@ Third, the feedback itself can be hard to use. A GPU hang tells you very little 
 
 These give us three requirements: compact source, independent primitives, and early feedback that tells the agent how to repair the program.
 
-## P10 · Performance + cheap iteration · 5:50–6:30
+## P10 · CroqTile: two co-design axes · 5:50–6:30
 
 But we cannot simply make everything high-level, cause we still want the performance controls.
 
 CUDA and CuTe let us express low-level decisions, but the source can be long and the edits are coupled. Tile languages make common operations much simpler, while some structural choices are hidden behind the abstraction.
 
-So our idea is to keep the important decisions explicit, and make each one compact to express and change.
+We organize the design along two axes: syntax–context co-design and compiler–harness co-design.
 
-What I would like to emphasize is that the agent still chooses the design. The language makes it easier to implement correctly.
+The first makes source and structural edits compact enough to preserve tuning history. The second connects compiler checks and diagnostics to the harness, so it can reject, repair, and evaluate candidates.
 
 ## P11 · Compact syntax preserves context · 6:30–7:25
 
-Let us see what this looks like. I am not gonna go through the all five constructs on the right, but the lower-left figure gives a concrete example.
+Let us see what this looks like. I am not gonna go through the whole grammar on the right, but the lower-left figure gives a concrete example.
 
 For the same persistent, warp-specialized GEMM, CroqTile takes 36 lines, compared with 182 for CUDA with CuTe.
 
@@ -140,13 +136,13 @@ So does this actually help the agent write a valid program?
 
 Here we compare compile success under the same agent, hardware, and budget. For static shapes, CroqTile reaches 85.7 percent on the first attempt. For dynamic shapes, it stays at 82.1 percent, while Triton reaches 48 percent in this evaluation.
 
-The symbolic shape system helps here, cause the compiler can infer relationships that would otherwise need more handwritten code.
+There are two mechanisms here. First, the syntax has fewer coupled edit sites, so the agent has fewer details to keep consistent. Second, the type system and compiler use symbolic inference to derive shape relationships, which matters especially for dynamic shapes.
 
 Correctness still needs verification. But fewer compile repairs leave more budget for performance tuning.
 
 ## P15 · Diagnostics that guide repair · 9:45–10:40
 
-And what happens when the program does fail? This is the other half of our design.
+And what happens when the program does fail? This is where compiler–harness co-design comes in.
 
 The symbolic engine checks shapes and resources before launch. For constraints that depend on runtime values, we also have runtime assertions.
 
@@ -170,7 +166,7 @@ Why would an error message affect throughput? Cause the agent has a limited tuni
 
 ## P17 · Close the autonomous loop · 11:30–12:25
 
-Now we can put everything together.
+Now we can put both co-design axes together in the tuning loop.
 
 One agent follows these six phases: profile, propose, implement, compile, measure, and decide. If compilation rejects the candidate, the feedback goes straight back to implementation. Once the candidate passes the checks, we verify correctness and measure its performance.
 
@@ -203,13 +199,3 @@ Second, early rejection with a concrete repair helps it use the tuning budget ef
 CroqTile is open source, with five accepted works using it. Please feel free to scan the code and have a look.
 
 Yeah, that is all from me. Thank you, and happy to take your questions.
-
----
-
-## Rehearsal notes · not spoken
-
-- Keep the CroqTile tab selected on slides 12 and 13. The script does not require live tab switching.
-- Timing checkpoints: start the agent discussion at **4:15**, the syntax examples at **7:25**, diagnostics at **9:45**, and results at **12:25**.
-- Pause briefly after “But!” on P4 and before the three failures on P9. On P12, P13, and P15, give the audience time to find the code you are pointing at.
-- If rehearsal runs long, shorten P3 to one sentence per reason, omit the eight-K comparison sentence and history ratio on P11, and omit the skills paragraph on P17. These cuts recover roughly 25–30 seconds without losing the main argument.
-- The 14-minute schedule is a rehearsal target, including transitions, rather than a measured recording duration.

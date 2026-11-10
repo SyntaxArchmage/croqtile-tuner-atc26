@@ -131,6 +131,10 @@ def main():
         for item in data['items']:
             if item['w'] >= .5 and item['h'] >= .5:
                 shape(slide, item)
+        # The default Office shape style adds shadows even when CSS has none.
+        for sh in slide.shapes:
+            if hasattr(sh, 'shadow'):
+                sh.shadow.inherit = False
         print(f'Exported slide {i+1}/{len(slides)}', flush=True)
     prs.save(ROOT / 'dist/slides.pptx')
 

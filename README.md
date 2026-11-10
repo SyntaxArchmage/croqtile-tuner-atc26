@@ -10,7 +10,7 @@ Shanghai Enflame Intelligence & Shanghai Jiao Tong University · ATC'26, Hong Ko
 - 五个 action · named shapes · parallel · event · tma · mma
 - tuning loop、语言全貌、结论
 
-幻灯片按 ← → 翻页，F 全屏，S 打开讲者备注。第 12–13 页的代码卡可以点 tab 切换 CroqTile / Triton / TileLang / CuTe / CUDA 的实现。
+幻灯片按 ← → 翻页，F 全屏，S 打开讲者备注。第 12–13 页可通过代码卡 tab 查看其他语言的对应实现。
 
 ## Background 图表
 
@@ -49,12 +49,27 @@ python3 figures/make_operator_figure.py   # -> figures/out/operator-gflops.svg�
 
 ## Presentation polish
 
-All 19 pages use concise key points. The submitted paper used for verification is
-`../croqtile-tuner-paper/sigopsatc2026-35/sources/main.pdf`. Detailed explanations
-and evidence qualifications live in speaker notes (S). Slide IDs remain stable
-for figure refreshes; chart builders preserve authored copy.
+The design narrative follows syntax–context co-design and compiler–harness
+co-design. Slide 14 connects compile success to fewer coupled syntax sites and
+symbolic inference in the type system/compiler. Visible bullets support the
+talk; `slides-craft` is a visual reference, not a source for replacement copy.
 
-Rebuild the editable PowerPoint with `python3 tools/export_pptx.py`, then
-`python3 tools/postprocess_pptx.py dist/slides.pptx`. Requires Playwright,
-python-pptx and CairoSVG. Text and speaker notes remain editable; figures
-are embedded at twice their displayed resolution.
+Original paper figures, EBNF and compiler diagnostics are preserved. Code cards
+use a muted teal palette; the HTML comparison bars use proportional widths and
+outside value labels. Presentation styles are authored in `polish.css`.
+Rebuild the deliverables with:
+
+```bash
+python3 tools/export_pptx.py
+```
+
+The exporter embeds styles into the standalone `index.html` and
+`dist/slides.html`, then regenerates `dist/slides.pptx`, `dist/slides.pdf` and
+`dist/preview/all-slides.jpg`. To refresh only the HTML, run
+`python3 tools/prepare_slides.py`.
+
+Requires Playwright/Chromium, python-pptx, CairoSVG, PyMuPDF, Pillow and
+Lato and Liberation Mono fonts. PowerPoint preserves editable
+text, syntax colors, rendered line breaks, bullets and speaker notes; figures
+are embedded at twice their displayed resolution. PDF uses the browser layout.
+The previous PowerPoint postprocessing step is no longer necessary.

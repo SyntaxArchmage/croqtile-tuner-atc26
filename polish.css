@@ -195,3 +195,20 @@
 }
 .reveal #slide-12 .tp-code:not([data-active-file="CroqTile"]) .code-line,
 .reveal #slide-13 .tp-code:not([data-active-file="CroqTile"]) .code-line { min-height: 1.45em; }
+.reveal #slide-13 .tp-code[data-active-file="CroqTile"] .tp-body pre { padding: 16px 27px; line-height: 1.5; }
+.reveal #slide-13 .tp-code[data-active-file="CroqTile"] .code-line { min-height: 1.5em; }
+
+/* The section labels express the two design axes, rather than generic slogans. */
+.reveal .slide-header .co-design-axis {
+  font-family: var(--font-body); font-style: normal; font-size: 13px;
+  font-weight: 600; letter-spacing: .01em; color: var(--accent);
+}
+.reveal .codesign-overview { flex: none; padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--line); }
+.reveal .codesign-overview .talk-points,
+.reveal .loop-notes .talk-points { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+.reveal .codesign-overview .talk-points li { font-size: 18px; }
+.reveal .axis-focus { display: flex; gap: 14px; }
+.reveal #slide-14 .key-points { gap: 42px; }
+.reveal #slide-15 .key-points { gap: 24px; }
+.reveal #slide-15 .kp-t { font-size: 18px; }
+.reveal #slide-19 .thanks-head { font-size: 13px; }

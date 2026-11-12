@@ -2682,7 +2682,7 @@
 <p class="affiliation">Shanghai Enflame Intelligence &amp; Shanghai Jiao Tong University</p>
 <aside class="notes">
 <p><strong>P1 · Title · 0:00–0:20</strong></p>
-<p>Hi everyone, I am Heng Shi, from Shanghai Enflame Intelligence and Shanghai Jiao Tong University. I am happy to be here to present our work on CroqTile, a new GPU programming language designed for autonomous kernel tuning. Let us start with the motivation.</p>
+<p>Hi everyone, I am Heng Shi from Enflame Technology and Shanghai Jiao Tong University. I am happy here to present our work on CroqTile, a new GPU programming language designed for autonomous kernel tuning. Let us get start with the motivation.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -2712,9 +2712,10 @@
 </div>
 <aside class="notes">
 <p><strong>P2 · Operator work keeps growing · 0:20–0:55</strong></p>
-<p>So, model architectures are gradually converging into a few families. But if you work on the kernels underneath, there is more and more work to do, right?</p>
-<p>As the top figure shows, new GPU DSLs keep coming out. In our survey, 22 out of 46 appeared in 2025 and 2026. The lower figure shows the same trend for operator optimization papers.</p>
-<p>So why does the kernel work keep growing, even when the models look similar?</p>
+<p>As you can see in the figures, the bottom one shows the number of works related to operator optimization and kernel tuning, and the the larger figure shows the number of programming models, domain-specific languages, and tools emerged for writing computing kernels.</p>
+<p>From the data, we can easily to tell two things, on the one hand, the topic about kernel tuning has draw much attention than ever before, especially for the most recent 2-3 years. On the other hand, recently emerged DSLs seems all have much higher abstraction level for programming.</p>
+<p>To me, this two phenomenon reveals one thing. the demand for operator development has largely increased.</p>
+<p>Why is that? we know the model architecture are actually converged into several families, like encoder, decoder and diffusion model, so why the operator optimization efforts are somehow increased</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -2747,12 +2748,12 @@
 </div>
 <div class="talk-takeaway"><b>The maintenance burden multiplies.</b><span>Operator variants × hardware targets × optimization choices.</span></div><aside class="notes">
 <p><strong>P3 · Why kernels multiply · 0:55–1:50</strong></p>
-<p>We think there are four reasons, and they stack together.</p>
-<p>First, the operators themselves keep changing. Even for attention, we have MHA, MQA, GQA, MLA, and more variants. The model is still a transformer, but the kernel is already different.</p>
-<p>Second, we have more hardware platforms. A good kernel for NVIDIA does not automatically become a good kernel for AMD or Ascend.</p>
-<p>And even within NVIDIA, the instructions keep changing. We just figured out how to use Hopper's warpgroup MMA, and now Blackwell brings another instruction family and another memory to manage.</p>
-<p>Finally, we fuse operators together to avoid intermediate memory traffic. This also creates new kernels.</p>
-<p>Together, these make a fixed library of standard operators harder to maintain.</p>
+<p>I think there are four reasons stack together.</p>
+<p>Firstly, the operators themselves keep changes. we now have much more variants of one operator than the early year of deep learning. Take attn layers as example, you now have so many variants listed here.</p>
+<p>Secondly, we have more hardware platforms than ever before, due to the demand for computing power. just like GPGPU, TPU, PIM, DSA and so many more.</p>
+<p>And also, even within the same device itself, it still evolves and changes. This change will lead to things like new HW features, different ISAs, new programming abstractions, and of course different sweet zone for performance.</p>
+<p>And lastly, you may notice that the amount of fused operators today are hugely increased with the evolution of AI inference infrastructure</p>
+<p>all these together makes the effort for writing computing kernel become so expensive.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -2769,10 +2770,9 @@
 </div>
 <div class="talk-takeaway"><b>A larger tile improves reuse…</b><span>…but consumes more shared memory, limiting stages and overlap.</span></div><aside class="notes">
 <p><strong>P4 · Kernel optimizations interact · 1:50–2:30</strong></p>
-<p>And for each kernel, there are already so many things to consider. Tiling, data reuse, swizzling, multibuffering, warp specialization, and all these tricks on the left.</p>
-<p>Like the right figure shows, applying optimizations can move performance by orders of magnitude. So we really have to do them.</p>
-<p>But! They are coupled. A larger tile may improve reuse, but it also takes more shared memory. Then fewer pipeline stages fit, and the overlap changes again.</p>
-<p>So the difficulty is figuring out which combination works together. Now, how do we normally do this?</p>
+<p>So of course, we would hope kernel tuning itself is not that hard. unfortunately, this is unrealistic. Let's look at how a single kenrel tuned, there will be so many things to consider. locality, bank conflict, instruction spill, memory hierarchy. For these concerns, we then designed many optimization techniques and tricks, like data Tiling, data reuse, swizzling, multibuffering, warp specialization.</p>
+<p>So what does a optimised kernel looks like? just like this figure, you would have to find out a recipe of techniques and trick and combine them together, this recipe is never easy to find. because all these factors are coupled together, for example on GPU, a larger tile may improve locality, but can consume more shared memory per block, this will unfortunately limit the parallelism</p>
+<p>So you can see, tradeoff is everywhere, so, how do we normally do to find this combination recipe?</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -2791,7 +2791,7 @@
 <circle class="dot" cx="468.9" cy="161.4" r="5"></circle>
 <path class="head" d="M465.8,248.1 L464.6,232.5 L476.0,236.2 Z"></path>
 <g class="lbl"><text text-anchor="start" x="497" y="164"><tspan class="num">02</tspan> analyse</text></g>
-<circle class="dot" cx="423.5" cy="301.1" r="5"></circle>
+<circle class="dot" cx="423.5" cy="301.1" r="5"></circle>jj
 <path class="head" d="M340.0,325.0 L354.5,319.0 L354.5,331.0 Z"></path>
 <g class="lbl"><text text-anchor="start" x="444" y="310"><tspan class="num">03</tspan> propose</text></g>
 <circle class="dot" cx="276.5" cy="301.1" r="5"></circle>
@@ -2817,9 +2817,8 @@
 <aside class="notes">
 <p><strong>P5 · Bottleneck-driven tuning · 2:30–3:10</strong></p>
 <p>The first way is probably familiar to you.</p>
-<p>We run the kernel, profile it, and figure out the bottleneck. Then we choose a structural change, implement it, compile, and measure again. If it helps, we keep it; otherwise, we try something else.</p>
-<p>For example, if the tensor cores are waiting for data, we may introduce a producer-consumer pipeline. That can change quite a lot of code.</p>
-<p>This is powerful, cause the expert can redesign the kernel. But every round needs someone to interpret the feedback and decide the next change.</p>
+<p>We can simply start from a naive version of implementation, profile it, find out its bottleneck, and pick up a trick for this bottleneck. by make this move iteratively like a loop. you will somehow approach a near-optimal version of kernel.</p>
+<p>We can call this bottleneck-first approach or what ever you like. and this i s how human developer normally does. no matter you are an apprentice or experts. Experts may be able to skip iterations, make multiple changes on the kernel and see further, but anyway, they still follow this workflow.</p>
 </aside>
 </section>
 <section class="gs" id="slide-06">
@@ -2837,9 +2836,9 @@
 </div>
 <aside class="notes">
 <p><strong>P6 · Template search · 3:10–3:45</strong></p>
-<p>The second way is autotuning. We write a template with tunable parameters, like tile size, stages, warp count, and swizzle.</p>
-<p>As the figure shows, each point is one configuration. We reject the ones that exceed resource limits, then benchmark the remaining candidates.</p>
-<p>But the search stays inside the template. If the better kernel needs a different producer-consumer structure, and we did not expose that choice, the search cannot discover it.</p>
+<p>The second way I would like to call it search-based approach. for this way, you will find familiar names, such as autotuning and loop synthesiser. Normally, We would write a template called kernel scheme with tunable parameters, like tile size, stages, and warp count.</p>
+<p>As the figure shows, this is a search problem in discrete space, where each point is one concrete kernel implementaion. Having this search space, you can then use algorithms you like to approaching the optimal kernel. you can do genetic search, you can do monte carlo, you can do swarm search.</p>
+<p>This method was popular years ago, because they are the automation attempt for tuning kernels to save human efforts before AI agents pops in. and for this purpose, we also created tools for exposing more performance related factors to the syntax, and let you control. The famous name for these tools are halide IR, TVM and we call them scheduling DSL.</p>
 </aside>
 </section>
 <section class="gs" id="slide-07">

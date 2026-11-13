@@ -1,201 +1,163 @@
-# CroqTile · ATC'26 · 14-minute talk notes
+# CroqTile · ATC’26 · 13-minute 30-second talk notes
+
+Pacing target: 13:30 total, including slide transitions and brief pauses. The script has approximately 1,931 spoken words; at 150 words per minute, this leaves about 38 seconds for pauses. P1–P6 wording is preserved from the manually polished slides. Timing labels are rehearsal targets.
 
 ## P1 · Title · 0:00–0:20
 
-Hi everyone, I am Heng Shi, from Shanghai Enflame Intelligence and Shanghai Jiao Tong University. I am happy to be here to present our work on CroqTile, a new GPU programming language designed for autonomous kernel tuning. Let us start with the motivation.
+Hi everyone, I am Heng Shi from Enflame Technology and Shanghai Jiao Tong University. I am happy here to present our work on CroqTile, a new GPU programming language designed for autonomous kernel tuning. Let us get start with the motivation.
 
-## P2 · Operator work keeps growing · 0:20–0:55
+## P2 · Operator work keeps growing · 0:20–1:15
 
-So, model architectures are gradually converging into a few families. But if you work on the kernels underneath, there is more and more work to do, right?
+As you can see in the figures, the bottom one shows the number of works related to operator optimization and kernel tuning, and the the larger figure shows the number of programming models, domain-specific languages, and tools emerged for writing computing kernels.
 
-As the top figure shows, new GPU DSLs keep coming out. In our survey, 22 out of 46 appeared in 2025 and 2026. The lower figure shows the same trend for operator optimization papers.
+From the data, we can easily to tell two things, on the one hand, the topic about kernel tuning has draw much attention than ever before, especially for the most recent 2-3 years. On the other hand, recently emerged DSLs seems all have much higher abstraction level for programming.
 
-So why does the kernel work keep growing, even when the models look similar?
+To me, this two phenomenon reveals one thing. the demand for operator development has largely increased.
 
-## P3 · Why kernels multiply · 0:55–1:50
+Why is that? we know the model architecture are actually converged into several families, like encoder, decoder and diffusion model, so why the operator optimization efforts are somehow increased
 
-We think there are four reasons, and they stack together.
+## P3 · Why kernels multiply · 1:15–2:15
 
-First, the operators themselves keep changing. Even for attention, we have MHA, MQA, GQA, MLA, and more variants. The model is still a transformer, but the kernel is already different.
+I think there are four reasons stack together.
 
-Second, we have more hardware platforms. A good kernel for NVIDIA does not automatically become a good kernel for AMD or Ascend.
+Firstly, the operators themselves keep changes. we now have much more variants of one operator than the early year of deep learning. Take attn layers as example, you now have so many variants listed here.
 
-And even within NVIDIA, the instructions keep changing. We just figured out how to use Hopper's warpgroup MMA, and now Blackwell brings another instruction family and another memory to manage.
+Secondly, we have more hardware platforms than ever before, due to the demand for computing power. just like GPGPU, TPU, PIM, DSA and so many more.
 
-Finally, we fuse operators together to avoid intermediate memory traffic. This also creates new kernels.
+And also, even within the same device itself, it still evolves and changes. This change will lead to things like new HW features, different ISAs, new programming abstractions, and of course different sweet zone for performance.
 
-Together, these make a fixed library of standard operators harder to maintain.
+And lastly, you may notice that the amount of fused operators today are hugely increased with the evolution of AI inference infrastructure
 
-## P4 · Kernel optimizations interact · 1:50–2:30
+all these together makes the effort for writing computing kernel become so expensive.
 
-And for each kernel, there are already so many things to consider. Tiling, data reuse, swizzling, multibuffering, warp specialization, and all these tricks on the left.
+## P4 · Kernel optimizations interact · 2:15–3:15
 
-Like the right figure shows, applying optimizations can move performance by orders of magnitude. So we really have to do them.
+So of course, we would hope kernel tuning itself is not that hard. unfortunately, this is unrealistic. Let's look at how a single kenrel tuned, there will be so many things to consider. locality, bank conflict, instruction spill, memory hierarchy. For these concerns, we then designed many optimization techniques and tricks, like data Tiling, data reuse, swizzling, multibuffering, warp specialization.
 
-But! They are coupled. A larger tile may improve reuse, but it also takes more shared memory. Then fewer pipeline stages fit, and the overlap changes again.
+So what does a optimised kernel looks like? just like this figure, you would have to find out a recipe of techniques and trick and combine them together, this recipe is never easy to find. because all these factors are coupled together, for example on GPU, a larger tile may improve locality, but can consume more shared memory per block, this will unfortunately limit the parallelism
 
-So the difficulty is figuring out which combination works together. Now, how do we normally do this?
+So you can see, tradeoff is everywhere, so, how do we normally do to find this combination recipe?
 
-## P5 · Bottleneck-driven tuning · 2:30–3:10
+## P5 · Bottleneck-driven tuning · 3:15–3:55
 
 The first way is probably familiar to you.
 
-We run the kernel, profile it, and figure out the bottleneck. Then we choose a structural change, implement it, compile, and measure again. If it helps, we keep it; otherwise, we try something else.
+We can simply start from a naive version of implementation, profile it, find out its bottleneck, and pick up a trick for this bottleneck. by make this move iteratively like a loop. you will somehow approach a near-optimal version of kernel.
 
-For example, if the tensor cores are waiting for data, we may introduce a producer-consumer pipeline. That can change quite a lot of code.
+We can call this bottleneck-first approach or what ever you like. and this i s how human developer normally does. no matter you are an apprentice or experts. Experts may be able to skip iterations, make multiple changes on the kernel and see further, but anyway, they still follow this workflow.
 
-This is powerful, cause the expert can redesign the kernel. But every round needs someone to interpret the feedback and decide the next change.
+## P6 · Template search · 3:55–5:00
 
-## P6 · Template search · 3:10–3:45
+The second way I would like to call it search-based approach. for this way, you will find familiar names, such as autotuning and loop synthesiser. Normally, We would write a template called kernel scheme with tunable parameters, like tile size, stages, and warp count.
 
-The second way is autotuning. We write a template with tunable parameters, like tile size, stages, warp count, and swizzle.
+As the figure shows, this is a search problem in discrete space, where each point is one concrete kernel implementaion. Having this search space, you can then use algorithms you like to approaching the optimal kernel. you can do genetic search, you can do monte carlo, you can do swarm search.
 
-As the figure shows, each point is one configuration. We reject the ones that exceed resource limits, then benchmark the remaining candidates.
+This method was popular years ago, because they are the automation attempt for tuning kernels to save human efforts before AI agents pops in. and for this purpose, we also created tools for exposing more performance related factors to the syntax, and let you control. The famous name for these tools are halide IR, TVM and we call them scheduling DSL.
 
-But the search stays inside the template. If the better kernel needs a different producer-consumer structure, and we did not expose that choice, the search cannot discover it.
+## P7 · Compiler transformations · 5:00–5:35
 
-## P7 · Compiler transformations · 3:45–4:15
+The third way is to put these optimization tricks into the compiler. As you can see here, data tiling becomes loop tiling, data reuse becomes cache staging, and multibuffering becomes software pipelining.
 
-The third way is to let the compiler do the transformations.
+So we can describe a schedule, or let compiler passes apply these transformations. This is where tools like TVM and MLIR come in. But there is still human effort behind it. When new hardware needs a new kernel structure, somebody has to teach the compiler how to make that transformation.
 
-You can see the correspondence here. Tiling becomes a loop transformation, data reuse becomes cache staging, and multibuffering becomes software pipelining.
+## P8 · Agents rewrite the kernel · 5:35–6:15
 
-This is how systems like TVM and MLIR help us. But when a new hardware feature requires a new kernel structure, somebody still has to implement the corresponding transformations.
+So now, with coding agents, we have another way to do this. Remember the bottleneck-first approach? We can put an agent into that loop, let it read the kernel, look at the profiler feedback, and pick up a trick to try.
 
-## P8 · Agents rewrite the kernel · 4:15–4:55
+The agent can change parameters, and also rewrite the kernel structure. Of course, this needs planning, evaluation, tools and knowledge, just like the things listed here. In our work, we focus on the programming language and compiler. How can we make this tuning loop easier for the agent?
 
-OK, now what we gonna do? Recently, people have started putting coding agents into this loop.
+## P9 · Design for agent failures · 6:15–7:05
 
-The agent can read the source and profiler feedback, propose a change, and rewrite the kernel. So it can change both the parameters and the structure, much like the expert loop we just saw.
+Firstly, let us look at where the agent gets into trouble. I think there are three things to consider.
 
-There are many efforts on planning, evaluation, tools, and knowledge, as listed on the right.
+One is context. Every iteration adds code, profiler output and debugging messages. After several rounds, earlier attempts may get pushed out, so the agent loses track of what it already tried.
 
-For this work, we focus on one question: what kind of programming language and compiler feedback would make this agent more effective? This is where CroqTile comes in.
+Secondly, one optimization can require changes in many places. Take TMA as an example, you have the descriptor, swizzle, copy and synchronization. Miss one, and the kernel may fail.
 
-## P9 · Design for agent failures · 4:55–5:50
+And lastly, the error may not tell you much. A GPU hang, for example, does not tell the agent which statement to fix.
 
-So first, let us see where the agent gets into trouble.
+So we want compact source, fewer coupled edits, and feedback that helps the next repair.
 
-One is context pressure. A production kernel can take hundreds of lines, and every round adds source code, profiler output, and debugging messages. Eventually, the earlier attempts get pushed out, even though the agent needs them to understand what it already tried.
+## P10 · CroqTile: two co-design axes · 7:05–7:45
 
-Second, one change can touch many places. Enabling TMA may involve the descriptor, the swizzle, the copy, and synchronization. Miss one of them, and you may get an annoying runtime bug.
+But of course, making the language higher level does not automatically solve this problem. We still need control over the things that affect performance.
 
-Third, the feedback itself can be hard to use. A GPU hang tells you very little about which line to fix.
+CUDA and CuTe give us this control, but there can be a lot of code to maintain. Tile languages make the code shorter, but some structural choices are hidden.
 
-These give us three requirements: compact source, independent primitives, and early feedback that tells the agent how to repair the program.
+So for CroqTile, we bring two things together. Firstly, design the syntax around the agent's context, so it can keep useful tuning history. Secondly, connect the compiler with the tuning harness, so the agent knows why a candidate failed and what to change.
 
-## P10 · CroqTile: two co-design axes · 5:50–6:30
+## P11 · Compact syntax preserves context · 7:45–8:25
 
-But we cannot simply make everything high-level, cause we still want the performance controls.
+Let us look at the first part. I am not going through the whole grammar here, but take the kernel on the bottom left as an example. For the same persistent, warp-specialized GEMM, CroqTile takes 36 lines, and CUDA with CuTe takes 182.
 
-CUDA and CuTe let us express low-level decisions, but the source can be long and the edits are coupled. Tile languages make common operations much simpler, while some structural choices are hidden behind the abstraction.
+So what does this save for the agent? Counting source, feedback and skills, one static-shape attempt takes about 2,370 tokens, compared with 4,480 for CUDA.
 
-We organize the design along two axes: syntax–context co-design and compiler–harness co-design.
+With the same eight-K comparison budget, this leaves 1.6 times as much room for history. So the agent can keep more previous attempts and measurements when deciding what to try next.
 
-The first makes source and structural edits compact enough to preserve tuning history. The second connects compiler checks and diagnostics to the harness, so it can reject, repair, and evaluate candidates.
+## P12 · parallel: one construct, three levels · 8:25–9:05
 
-## P11 · Compact syntax preserves context · 6:30–7:25
+Now let us see how we expose the performance controls. The first example is parallelism.
 
-Let us see what this looks like. I am not gonna go through the whole grammar on the right, but the lower-left figure gives a concrete example.
+As you can see on the right, we use the same parallel construct for blocks, warpgroups and threads. We describe how to divide the work and which level executes it.
 
-For the same persistent, warp-specialized GEMM, CroqTile takes 36 lines, compared with 182 for CUDA with CuTe.
+Then in the bottom example, we give two warpgroups different jobs. One moves data with TMA, and the other computes with MMA. This gives us the producer-consumer structure.
 
-And the upper figure asks what this means inside an agent's context. Counting source, feedback, and skills, one static-shape attempt takes about 2,370 tokens, compared with about 4,480 for CUDA.
+So when the agent wants to change this structure, there is a clear place to edit, without rebuilding all the thread-index calculations.
 
-Using the same eight-K working set for comparison, this leaves 1.6 times as much room for history. Eight-K here is just a comparison budget.
+## P13 · tma: one statement per transfer · 9:05–9:45
 
-So the saved space can hold previous attempts and measurements. That is useful information for deciding the next edit.
+The second example is TMA data movement. Remember that one change could involve several pieces of code?
 
-## P12 · parallel: one construct, three levels · 7:25–8:15
+Here, we describe the transfer in one statement. The source and destination tell us which tile moves where, and the swizzle is a modifier. The compiler then generates the corresponding descriptor.
 
-Now let us see two syntax examples. The first one is parallelism.
+As you can see, this example takes two statements, one load and one store. We still let the agent choose the swizzle, because it affects performance. The compiler keeps the derived descriptor consistent with that choice. So there are fewer details for the agent to maintain by hand.
 
-[Point to the three `parallel` blocks on the right.]
+## P14 · Compile success across shapes · 9:45–10:20
 
-You can see the same construct at three levels: blocks, warpgroups, and threads. We specify how the work is divided and which level executes it.
+So does this help the agent produce a program that compiles? Under the same agent, hardware and budget, CroqTile reaches 85.7 percent on the first attempt for static shapes. For dynamic shapes, it stays at 82.1 percent, compared with 48 percent for Triton in this evaluation.
 
-Then look at the bottom example. We create two warpgroups and give them different jobs. One does the TMA data movement, and the other does the MMA computation. This is the producer-consumer structure we mentioned earlier.
+Two things contribute here: fewer coupled edits in the syntax, and symbolic inference to work out shape relationships.
 
-The useful part for tuning is that this decision has an explicit place in the source. The agent can change the parallel structure without reconstructing all the thread-index calculations by hand.
+Of course, compiling successfully does not mean the result is correct. We still verify correctness, but fewer compile repairs leave more time for tuning.
 
-## P13 · tma: one statement per transfer · 8:15–9:05
+## P15 · Diagnostics that guide repair · 10:20–11:05
 
-The second example is data movement. Remember that enabling TMA could require changing several coupled pieces?
+And when compilation does fail, what should we return to the agent? This brings us to the compiler and harness.
 
-Here, one statement describes the transfer. The source and destination tell us which tile moves where, and the swizzle is written as a modifier. The compiler derives the corresponding descriptor and transfer machinery.
+We check shapes and resource limits before launch, and use runtime assertions for constraints that depend on runtime values.
 
-[Point to the load, then the store.]
+Let us follow the example on the left. The feedback tells us which constraint failed, what values we observed, where the statement is, and how to repair it. Here, the dimensions do not match, and the suggested repair is to add zero fill for the tail tile.
 
-So this example needs two statements, one for loading and one for storing. The comparison on the left shows how much supporting code the other implementations require.
+So the agent has a concrete next move: go to that statement, make the change, and compile again.
 
-We still expose the performance choice, like which swizzle to use. But the agent does not have to manually keep every derived detail consistent with that choice.
+## P16 · Prune before GPU execution · 11:05–11:45
 
-## P14 · Compile success across shapes · 9:05–9:45
+These checks also help us save GPU trials. We have 353 checks across seven modules. In this sparse GEMM sweep, we start with 480 configurations, and only 102 remain viable. So about 79 percent are pruned before GPU execution, mostly due to register and shared-memory limits.
 
-So does this actually help the agent write a valid program?
+And the feedback matters for performance too. Replacing structured feedback with generic errors reduces throughput by 14.9 percent in the sparse GEMM ablation.
 
-Here we compare compile success under the same agent, hardware, and budget. For static shapes, CroqTile reaches 85.7 percent on the first attempt. For dynamic shapes, it stays at 82.1 percent, while Triton reaches 48 percent in this evaluation.
+The reason is that tuning time is limited. More time spent guessing how to fix a program means fewer chances to find a faster kernel.
 
-There are two mechanisms here. First, the syntax has fewer coupled edit sites, so the agent has fewer details to keep consistent. Second, the type system and compiler use symbolic inference to derive shape relationships, which matters especially for dynamic shapes.
+## P17 · Close the autonomous loop · 11:45–12:25
 
-Correctness still needs verification. But fewer compile repairs leave more budget for performance tuning.
+Now let us put these pieces back into the tuning loop. The agent profiles, proposes a change, implements it, compiles, measures, and decides whether to keep it.
 
-## P15 · Diagnostics that guide repair · 9:45–10:40
+If compilation fails, the feedback goes back for repair. If it passes, we check correctness and measure performance. Skills and references provide the language rules and optimization ideas along the way.
 
-And what happens when the program does fail? This is where compiler–harness co-design comes in.
+So this is still the iterative workflow we started with. Across the evaluated workloads with vendor references, the resulting kernels achieve a geometric-mean speedup of 1.23 times. Let us look at two examples.
 
-The symbolic engine checks shapes and resources before launch. For constraints that depend on runtime values, we also have runtime assertions.
+## P18 · Tuning beyond cuBLAS · 12:25–13:00
 
-Then the compiler and harness return structured feedback. Let us follow the example on the left.
+As you can see on the left, this is dense FP16 GEMM at 16,384 cubed. The solid lines show the best throughput found so far, and the dashed line is cuBLAS. CroqTile gradually improves, reaches that line, and then goes beyond it.
 
-[Follow the four tagged blocks from top to bottom.]
+On the right, for block-scale E4M3 GEMM at 8,192 cubed, it crosses the vendor baseline earlier and keeps improving.
 
-First, which constraint failed? The source and destination dimensions do not match. Second, what values did we observe? Third, which statement caused it? Finally, how can we repair it?
+Both use the same agent and per-shape time cap on H800. So in these two cases, the agent can keep turning its changes into working, faster kernels.
 
-In this case, the message suggests adding zero fill for the tail tile. So the next edit is concrete. The agent can go directly to that statement, apply the repair, and compile again.
+## P19 · Thank you · 13:00–13:30
 
-## P16 · Prune before GPU execution · 10:40–11:30
+So the main idea is to make the language and compiler fit this iterative tuning process. Compact code helps the agent keep its history, explicit controls let it try optimizations, and useful feedback helps it repair mistakes.
 
-We can also use these checks to avoid wasting GPU trials.
+CroqTile is open source, and you can see five accepted works using it here. Please feel free to scan the code and have a look.
 
-The compiler has 353 checks across seven modules. In this sparse GEMM sweep, we start with 480 configurations, and only 102 remain viable. About 79 percent are pruned before GPU execution, mostly because of register and shared-memory limits.
-
-And the feedback quality matters for the final performance too. In the sparse GEMM ablation, replacing the structured feedback with generic errors reduces throughput by 14.9 percent.
-
-Why would an error message affect throughput? Cause the agent has a limited tuning budget. If it spends that budget guessing how to repair invalid programs, it has fewer chances to find a faster valid one.
-
-## P17 · Close the autonomous loop · 11:30–12:25
-
-Now we can put both co-design axes together in the tuning loop.
-
-One agent follows these six phases: profile, propose, implement, compile, measure, and decide. If compilation rejects the candidate, the feedback goes straight back to implementation. Once the candidate passes the checks, we verify correctness and measure its performance.
-
-We also provide skills and references, so the agent has the language rules and relevant optimization ideas when it needs them.
-
-Remember the expert loop at the beginning? We are still doing that kind of iterative work. Here, the compact program and actionable feedback help the agent carry it out.
-
-Across the evaluated workloads with vendor references, the resulting kernels achieve a geometric-mean speedup of 1.23 times over the vendor libraries. Let us look at two tuning trajectories.
-
-## P18 · Tuning beyond cuBLAS · 12:25–13:20
-
-On the left is dense FP16 GEMM, with all three dimensions equal to 16,384. The horizontal axis is tuning iteration, and the vertical axis is throughput. The solid lines track the best result found so far.
-
-[Trace the blue curve, then point to the dashed line.]
-
-You can see CroqTile gradually improves, reaches the cuBLAS line, and then goes beyond it.
-
-On the right is block-scale E4M3 GEMM, at 8,192 cubed. Here it crosses the vendor baseline much earlier and keeps improving.
-
-What I would like you to notice is the progress across iterations. In these two cases, the agent can keep turning its proposed changes into working, faster kernels. This is the outcome we want from the language and compiler working together.
-
-## P19 · Thank you · 13:20–14:00
-
-So to wrap up, I would like you to take away two things.
-
-First, compact source with explicit performance controls helps the agent explore kernel designs.
-
-Second, early rejection with a concrete repair helps it use the tuning budget effectively.
-
-CroqTile is open source, with five accepted works using it. Please feel free to scan the code and have a look.
-
-Yeah, that is all from me. Thank you, and happy to take your questions.
+That is all from me. Thank you, and happy to take your questions.

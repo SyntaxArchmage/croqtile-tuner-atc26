@@ -1,6 +1,6 @@
 # CroqTile · ATC’26 · 13-minute 30-second talk notes
 
-Pacing target: 13:30 total, including slide transitions and brief pauses. The script has approximately 1,931 spoken words; at 150 words per minute, this leaves about 38 seconds for pauses. P1–P6 wording is preserved from the manually polished slides. Timing labels are rehearsal targets.
+Pacing target: 13:30 total, including slide transitions and brief pauses. The script has approximately 1,919 spoken words; at 150 words per minute, this leaves about 42 seconds for pauses. P1–P6 wording is preserved from the manually polished slides. Timing labels are rehearsal targets.
 
 ## P1 · Title · 0:00–0:20
 
@@ -60,57 +60,55 @@ The third way is to put these optimization tricks into the compiler. As you can 
 
 So we can describe a schedule, or let compiler passes apply these transformations. This is where tools like TVM and MLIR come in. But there is still human effort behind it. When new hardware needs a new kernel structure, somebody has to teach the compiler how to make that transformation.
 
-## P8 · Agents rewrite the kernel · 5:35–6:15
+## P8 · Agents rewrite the kernel · 5:35–6:20
 
 So now, with coding agents, we have another way to do this. Remember the bottleneck-first approach? We can put an agent into that loop, let it read the kernel, look at the profiler feedback, and pick up a trick to try.
 
-The agent can change parameters, and also rewrite the kernel structure. Of course, this needs planning, evaluation, tools and knowledge, just like the things listed here. In our work, we focus on the programming language and compiler. How can we make this tuning loop easier for the agent?
+The agent can change both the parameters and the kernel structure. And of course, there are many efforts on planning, evaluation, tools and knowledge, as listed here.
 
-## P9 · Design for agent failures · 6:15–7:05
+In our work, we want to design an agent-specific kernel language, which serves as the programming substrate for this loop. It should help the agent express its optimization ideas, implement the changes, and do better tuning.
 
-Firstly, let us look at where the agent gets into trouble. I think there are three things to consider.
+## P9 · Design for agent failures · 6:20–7:05
 
-One is context. Every iteration adds code, profiler output and debugging messages. After several rounds, earlier attempts may get pushed out, so the agent loses track of what it already tried.
+To achieve this target, we have to understand the typical failure modes for tuning agents.
 
-Secondly, one optimization can require changes in many places. Take TMA as an example, you have the descriptor, swizzle, copy and synchronization. Miss one, and the kernel may fail.
+Firstly, the context gets used up very quickly. We keep adding code, profiler output and debugging messages. After several rounds, the agent may lose earlier attempts and repeat something it already tried.
 
-And lastly, the error may not tell you much. A GPU hang, for example, does not tell the agent which statement to fix.
+Secondly, one optimization may need changes in many places. Take TMA as an example, the descriptor, swizzle, copy and synchronization have to work together. Missing one can break the kernel.
 
-So we want compact source, fewer coupled edits, and feedback that helps the next repair.
+And lastly, the feedback can be hard to use. If the GPU just hangs, how does the agent know which statement to fix?
+
+So these are the problems we want our language and compiler to address.
 
 ## P10 · CroqTile: two co-design axes · 7:05–7:45
 
-But of course, making the language higher level does not automatically solve this problem. We still need control over the things that affect performance.
+When we try to meet these needs, we run into an impossible triangle: expressiveness, performance and development efficiency. We want enough freedom to tune, fast kernels, and low effort for each iteration.
 
-CUDA and CuTe give us this control, but there can be a lot of code to maintain. Tile languages make the code shorter, but some structural choices are hidden.
+CUDA and CuTe give us control and performance, but require a lot of code. Tile languages make programming easier, while hiding some structural choices that matter for tuning.
 
-So for CroqTile, we bring two things together. Firstly, design the syntax around the agent's context, so it can keep useful tuning history. Secondly, connect the compiler with the tuning harness, so the agent knows why a candidate failed and what to change.
+So our choice is to keep the performance controls explicit, and reduce the work around them. We do this along two axes: syntax–context co-design, to make the code compact for the agent; and compiler–harness co-design, to make failures easier to identify and repair.
 
 ## P11 · Compact syntax preserves context · 7:45–8:25
 
-Let us look at the first part. I am not going through the whole grammar here, but take the kernel on the bottom left as an example. For the same persistent, warp-specialized GEMM, CroqTile takes 36 lines, and CUDA with CuTe takes 182.
+Let us look at the syntax–context part first. Here, we try to increase the information density as much as possible, so the agent can express an optimization with less code.
 
-So what does this save for the agent? Counting source, feedback and skills, one static-shape attempt takes about 2,370 tokens, compared with 4,480 for CUDA.
+This matters because the context has to hold much more than the source. We have skills and system prompts, profiler and compiler feedback, and we also need room for the agent's thinking.
 
-With the same eight-K comparison budget, this leaves 1.6 times as much room for history. So the agent can keep more previous attempts and measurements when deciding what to try next.
+And notably, if a bug emerges, many of these costs are multiplied. The agent reads the code again, gets more feedback, and spends more of its thinking budget on the repair.
 
-## P12 · parallel: one construct, three levels · 8:25–9:05
+So compact syntax saves room for the whole tuning process.
 
-Now let us see how we expose the performance controls. The first example is parallelism.
+## P12 · parallel: one construct, three levels · 8:25–9:10
 
-As you can see on the right, we use the same parallel construct for blocks, warpgroups and threads. We describe how to divide the work and which level executes it.
+So how do we simplify the syntax without sacrificing performance? We first identify the routine setup code and verify that it can be derived from the chosen parallel structure.
 
-Then in the bottom example, we give two warpgroups different jobs. One moves data with TMA, and the other computes with MMA. This gives us the producer-consumer structure.
+As you can see in the parallel example here, the work division and execution level stay explicit. The compiler handles the corresponding indexing and launch setup, so the agent does not have to write those details by hand.
 
-So when the agent wants to change this structure, there is a clear place to edit, without rebuilding all the thread-index calculations.
+## P13 · tma: one statement per transfer · 9:10–9:45
 
-## P13 · tma: one statement per transfer · 9:05–9:45
+Then there are operations that affect performance but follow a clear optimization pattern. Take TMA data movement as an example.
 
-The second example is TMA data movement. Remember that one change could involve several pieces of code?
-
-Here, we describe the transfer in one statement. The source and destination tell us which tile moves where, and the swizzle is a modifier. The compiler then generates the corresponding descriptor.
-
-As you can see, this example takes two statements, one load and one store. We still let the agent choose the swizzle, because it affects performance. The compiler keeps the derived descriptor consistent with that choice. So there are fewer details for the agent to maintain by hand.
+Here, the agent specifies which tile moves where, while the compiler generates the descriptor and transfer setup. But the best swizzle pattern still needs tuning, so we keep those options explicit as modifiers in the syntax.
 
 ## P14 · Compile success across shapes · 9:45–10:20
 
@@ -132,11 +130,11 @@ So the agent has a concrete next move: go to that statement, make the change, an
 
 ## P16 · Prune before GPU execution · 11:05–11:45
 
-These checks also help us save GPU trials. We have 353 checks across seven modules. In this sparse GEMM sweep, we start with 480 configurations, and only 102 remain viable. So about 79 percent are pruned before GPU execution, mostly due to register and shared-memory limits.
+These checks also help us narrow the search before using the GPU. Candidates that exceed resource limits can be rejected early, with feedback telling the agent what to change.
 
-And the feedback matters for performance too. Replacing structured feedback with generic errors reduces throughput by 14.9 percent in the sparse GEMM ablation.
+As you can see here, many invalid configurations are removed at this stage. The harness then checks correctness and measures performance for the remaining candidates.
 
-The reason is that tuning time is limited. More time spent guessing how to fix a program means fewer chances to find a faster kernel.
+So the compiler is part of the tuning loop: it helps the agent spend less time debugging invalid programs and more time finding faster kernels.
 
 ## P17 · Close the autonomous loop · 11:45–12:25
 

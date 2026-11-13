@@ -2898,9 +2898,10 @@
 </div>
 </div>
 <aside class="notes">
-<p><strong>P8 · Agents rewrite the kernel · 5:35–6:15</strong></p>
+<p><strong>P8 · Agents rewrite the kernel · 5:35–6:20</strong></p>
 <p>So now, with coding agents, we have another way to do this. Remember the bottleneck-first approach? We can put an agent into that loop, let it read the kernel, look at the profiler feedback, and pick up a trick to try.</p>
-<p>The agent can change parameters, and also rewrite the kernel structure. Of course, this needs planning, evaluation, tools and knowledge, just like the things listed here. In our work, we focus on the programming language and compiler. How can we make this tuning loop easier for the agent?</p>
+<p>The agent can change both the parameters and the kernel structure. And of course, there are many efforts on planning, evaluation, tools and knowledge, as listed here.</p>
+<p>In our work, we want to design an agent-specific kernel language, which serves as the programming substrate for this loop. It should help the agent express its optimization ideas, implement the changes, and do better tuning.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -2939,12 +2940,12 @@
 </div>
 </div>
 <aside class="notes">
-<p><strong>P9 · Design for agent failures · 6:15–7:05</strong></p>
-<p>Firstly, let us look at where the agent gets into trouble. I think there are three things to consider.</p>
-<p>One is context. Every iteration adds code, profiler output and debugging messages. After several rounds, earlier attempts may get pushed out, so the agent loses track of what it already tried.</p>
-<p>Secondly, one optimization can require changes in many places. Take TMA as an example, you have the descriptor, swizzle, copy and synchronization. Miss one, and the kernel may fail.</p>
-<p>And lastly, the error may not tell you much. A GPU hang, for example, does not tell the agent which statement to fix.</p>
-<p>So we want compact source, fewer coupled edits, and feedback that helps the next repair.</p>
+<p><strong>P9 · Design for agent failures · 6:20–7:05</strong></p>
+<p>To achieve this target, we have to understand the typical failure modes for tuning agents.</p>
+<p>Firstly, the context gets used up very quickly. We keep adding code, profiler output and debugging messages. After several rounds, the agent may lose earlier attempts and repeat something it already tried.</p>
+<p>Secondly, one optimization may need changes in many places. Take TMA as an example, the descriptor, swizzle, copy and synchronization have to work together. Missing one can break the kernel.</p>
+<p>And lastly, the feedback can be hard to use. If the GPU just hangs, how does the agent know which statement to fix?</p>
+<p>So these are the problems we want our language and compiler to address.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -2991,9 +2992,9 @@
 
 <div class="codesign-overview"><ul class="talk-points"><li><b>Syntax–context co-design</b><span>Compact syntax and fewer coupled edit sites leave room for source, feedback and tuning history.</span></li><li><b>Compiler–harness co-design</b><span>Symbolic checks and structured diagnostics guide rejection, repair and GPU evaluation.</span></li></ul></div><aside class="notes">
 <p><strong>P10 · CroqTile: two co-design axes · 7:05–7:45</strong></p>
-<p>But of course, making the language higher level does not automatically solve this problem. We still need control over the things that affect performance.</p>
-<p>CUDA and CuTe give us this control, but there can be a lot of code to maintain. Tile languages make the code shorter, but some structural choices are hidden.</p>
-<p>So for CroqTile, we bring two things together. Firstly, design the syntax around the agent's context, so it can keep useful tuning history. Secondly, connect the compiler with the tuning harness, so the agent knows why a candidate failed and what to change.</p>
+<p>When we look into this problem, we found an impossible triangle when designing a kernel programming language: they are the expressiveness, performance and development efficiency.</p>
+<p>CUDA and CuTe give us control and performance, but require a lot of code. Tile languages make programming easier, while hiding some structural choices that matter for tuning.</p>
+<p>So our choice is to keep the performance controls explicit, and reduce the work around them. We do this along two axes: syntax–context co-design, to make the code compact for the agent; and compiler–harness co-design, to make failures easier to identify and repair.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -3013,9 +3014,10 @@
 </div>
 <div class="context-notes"><ul class="talk-points"><li><b>36 vs. 182 source lines</b><span>Same persistent, warp-specialized GEMM; CroqTile vs. CUDA + CuTe.</span></li><li><b>Room for tuning history</b><span>≈2.37K vs. ≈4.48K tokens per static-shape attempt, including source, feedback and skills.</span></li></ul></div><aside class="notes">
 <p><strong>P11 · Compact syntax preserves context · 7:45–8:25</strong></p>
-<p>Let us look at the first part. I am not going through the whole grammar here, but take the kernel on the bottom left as an example. For the same persistent, warp-specialized GEMM, CroqTile takes 36 lines, and CUDA with CuTe takes 182.</p>
-<p>So what does this save for the agent? Counting source, feedback and skills, one static-shape attempt takes about 2,370 tokens, compared with 4,480 for CUDA.</p>
-<p>With the same eight-K comparison budget, this leaves 1.6 times as much room for history. So the agent can keep more previous attempts and measurements when deciding what to try next.</p>
+<p>Let us look at the syntax–context part first. Here, we try to increase the information density and make the program source code much more compact without lose information.</p>
+<p>This matters because the context has to hold much more than the source. We have skills and system prompts, profiler and compiler feedback, and we also need room for the agent's thinking.</p>
+<p>And notably, if a bug emerges, many of these costs are multiplied. The agent reads the code again, gets more feedback, and spends more of its thinking budget on the repair.</p>
+<p>So compact syntax saves room for the whole tuning process.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -3041,11 +3043,11 @@
 <div class="tp-code polished-code" data-tabs='[{"file": "CroqTile", "badge": "CROQTILE", "label": "", "lang": "choreo", "code": "parallel {bm, bn}\n  by [cdiv(M, WARP_M), cdiv(N, WARP_N)] : block {\n  parallel p by 1 : group-4 {\n    mma.row.row mc, ma, mb;\n  }\n  parallel {m, n}\n    by [WARP_M, 2] : thread { ... }\n}\n\n// Producer–consumer warp specialization\nparallel p1 by 2 : group-4 {\n  inthreads.async (p1 == 0) { /* TMA producer */ }\n  inthreads.async (p1 == 1) { /* MMA consumer */ }\n}"}, {"file": "TileLang", "badge": "TILELANG", "label": "", "lang": "python", "code": "@T.prim_func\ndef main(A: T.Tensor(...), ...):\n  # 1. block-level grid\n  with T.Kernel(cdiv(N, block_N), cdiv(M, block_M),\n      threads=128) as (bx, by):\n    # 2. thread-level parallel\n    for i, j in T.Parallel(block_M, block_N):\n      C_local[i, j] = 0\n    # 3. pipelined main loop\n    for k in T.Pipelined(cdiv(K, block_K), num_stages=3):\n      T.copy(A[by*block_M, k*block_K], A_shared)\n      T.gemm(A_shared, B_shared, C_local)\n    # 4. warpgroup specialization\n    with T.ws(0): T.copy(A[...], A_shared)   # producer\n    with T.ws(1): T.gemm(...)                # consumer"}, {"file": "CuTe / CUTLASS", "badge": "CUTLASS", "label": "", "lang": "cpp", "code": "template &lt;class TiledMMA&gt;\n__global__ void kernel(...) {\n  // 1. block-level tile\n  auto cta = make_coord(blockIdx.x, blockIdx.y, _);\n  Tensor gA = local_tile(mA, cta_tiler, cta);\n  // 2. thread-level partition\n  auto thr_mma = tiled_mma.get_slice(threadIdx.x);\n  Tensor tCrA = thr_mma.partition_fragment_A(gA);\n  // 3. warpgroup-level MMA\n  gemm(tiled_mma, tCrA, tCrB, tCrC);\n  // 4. producer / consumer warpgroup\n  if (threadIdx.x &lt; 128) { /* TMA producer */ } else { /* MMA consumer */ }\n  // 5. pipeline\n  auto pipeline = make_pipeline(params);\n  // 6. cluster: cute::cluster_arrive_relaxed();\n}"}, {"file": "CUDA", "badge": "CUDA", "label": "", "lang": "cpp", "code": "__global__ void kernel(...) {\n  // 1. block-level tile\n  int bm = blockIdx.y, bn = blockIdx.x;\n  // 2. warpgroup / 3. warp / 4. thread\n  int wg   = threadIdx.x / 128;\n  int warp = (threadIdx.x % 128) / 32;\n  int lane = threadIdx.x % 32;\n  // 5. warp specialization\n  if (wg == 0) { /* producer: TMA load */ } else { /* consumer: MMA */ }\n  // 6. barrier\n  __syncthreads();\n  // 7. cooperative groups\n  auto block = cg::this_thread_block();\n  auto tile  = cg::tiled_partition&lt;32&gt;(block);\n  // 8. launch: kernel&lt;&lt;&lt;grid, block, smem, stream&gt;&gt;&gt;\n}"}]'></div>
 </div>
 <aside class="notes">
-<p><strong>P12 · parallel: one construct, three levels · 8:25–9:05</strong></p>
-<p>Now let us see how we expose the performance controls. The first example is parallelism.</p>
-<p>As you can see on the right, we use the same parallel construct for blocks, warpgroups and threads. We describe how to divide the work and which level executes it.</p>
-<p>Then in the bottom example, we give two warpgroups different jobs. One moves data with TMA, and the other computes with MMA. This gives us the producer-consumer structure.</p>
-<p>So when the agent wants to change this structure, there is a clear place to edit, without rebuilding all the thread-index calculations.</p>
+<p><strong>P12 · parallel: one construct, three levels · 8:25–9:10</strong></p>
+<p>So how do we simplify the syntax without sacrificing performance? We first classify hardware controls and validate their performance impact.</p>
+<p>We absorb controls with a clear preferred direction, and routine code that does not affect performance, into simpler syntax.</p>
+<p>For controls with workload-dependent performance tradeoffs, we keep them explicit and provide more intuitive abstractions.</p>
+<p>As you can see in the parallel example here, the work division stays explicit while the compiler handles the indexing and launch setup, which is just routing code.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -3069,10 +3071,10 @@
 <div class="tp-code polished-code" data-tabs='[{"file": "CroqTile", "badge": "CROQTILE", "label": "", "lang": "choreo", "code": "// LOAD · global → shared\ntma.copy.swiz&lt;128&gt;\n  lhs.subspan(WARP_M, TILE_K)\n     .at(bm, iv_k) =&gt; lhs_s;\n\n// STORE · shared → global\ntma.copy out_s =&gt;\n  output.subspan(WARP_M, WARP_N)\n        .at(bm, bn);"}, {"file": "Triton", "badge": "TRITON", "label": "", "lang": "python", "code": "# one descriptor per tensor\ndesc_a = tl.make_tensor_descriptor(\n    a_ptr, shape=[M, K], strides=[K, 1],\n    block_shape=[BLOCK_M, BLOCK_K])\ndesc_c = tl.make_tensor_descriptor(\n    c_ptr, shape=[M, N], strides=[N, 1],\n    block_shape=[BLOCK_M, BLOCK_N])\n# TMA load: global -&gt; registers\na = desc_a.load([pid_m * BLOCK_M, k * BLOCK_K])\n# ... compute ...\n# TMA store: registers -&gt; global\ndesc_c.store([pid_m * BLOCK_M, pid_n * BLOCK_N], c)"}, {"file": "TileLang", "badge": "TILELANG", "label": "", "lang": "python", "code": "# TMA load: global -&gt; shared\nT.copy(\n    A[by * block_M, iv_k * block_K],\n    A_shared)\n# TMA store: shared -&gt; global\nT.copy(\n    C_local,\n    C[by * block_M, bx * block_N])"}, {"file": "CuTe / CUTLASS", "badge": "CUTLASS", "label": "", "lang": "cpp", "code": "// one descriptor per tensor\nauto tma_load = make_tma_copy(\n    SM90_TMA_LOAD{}, mA, SmemLayoutA{}, cta_tiler);\nauto tma_store = make_tma_copy(\n    SM90_TMA_STORE{}, mC, SmemLayoutC{}, cta_tiler);\n// TMA load: global -&gt; shared\ncopy(tma_load.with(*pipeline.producer_acquire()),\n     gA(_, _, k), sA(_, _, k));\npipeline.producer_commit();\n// TMA store: shared -&gt; global\ncopy(tma_store, sC, gC(_, _, bn));"}, {"file": "CUDA", "badge": "CUDA", "label": "", "lang": "cpp", "code": "// descriptor boilerplate elided: lhs_map, out_map\n__shared__ cuda::barrier&lt;cuda::thread_scope_block&gt; bar;\ninit(&amp;bar, blockDim.x);\ncde::fence_proxy_async_shared_cta();\n__syncthreads();\n// TMA load: global -&gt; shared\ncde::cp_async_bulk_tensor_2d_global_to_shared(\n    lhs_s, &amp;lhs_map, k * TILE_K, blockIdx.y * WARP_M, bar);\nbar.arrive_and_wait();\n// TMA store: shared -&gt; global\ncde::cp_async_bulk_tensor_2d_shared_to_global(\n    &amp;out_map, blockIdx.y * WARP_M, blockIdx.x * WARP_N, out_s);\ncde::cp_async_bulk_commit_group();\ncde::cp_async_bulk_wait_group_read&lt;0&gt;();"}]'></div>
 </div>
 <aside class="notes">
-<p><strong>P13 · tma: one statement per transfer · 9:05–9:45</strong></p>
-<p>The second example is TMA data movement. Remember that one change could involve several pieces of code?</p>
-<p>Here, we describe the transfer in one statement. The source and destination tell us which tile moves where, and the swizzle is a modifier. The compiler then generates the corresponding descriptor.</p>
-<p>As you can see, this example takes two statements, one load and one store. We still let the agent choose the swizzle, because it affects performance. The compiler keeps the derived descriptor consistent with that choice. So there are fewer details for the agent to maintain by hand.</p>
+<p><strong>P13 · tma: one statement per transfer · 9:10–9:45</strong></p>
+<p>The same idea applies to TMA data movement. Here, the syntax describes which tile moves where, and the compiler derives the corresponding descriptor.</p>
+<p>But swizzling affects performance, so this choice stays explicit as a specifier.</p>
+<p>As you can see in the load and store here, the agent can change the transfer or swizzle directly, without a seperate configuration statement, and the compiler keeps the descriptor consistent.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -3134,8 +3136,8 @@
 </div>
 <aside class="notes">
 <p><strong>P15 · Diagnostics that guide repair · 10:20–11:05</strong></p>
-<p>And when compilation does fail, what should we return to the agent? This brings us to the compiler and harness.</p>
-<p>We check shapes and resource limits before launch, and use runtime assertions for constraints that depend on runtime values.</p>
+<p>And when compilation does fail, what should we return to the agent? This brings us to another core idea of our work, the compiler and harness co-design.</p>
+<p>We built a comprehensive symbolic inference engine and a type system atop of the primitive shape type. this gives us ability to do more compile-time checks and resource limits validation before launch, and we also use runtime assertions for constraints that depend on runtime values.</p>
 <p>Let us follow the example on the left. The feedback tells us which constraint failed, what values we observed, where the statement is, and how to repair it. Here, the dimensions do not match, and the suggested repair is to add zero fill for the tail tile.</p>
 <p>So the agent has a concrete next move: go to that statement, make the change, and compile again.</p>
 </aside>
@@ -3158,9 +3160,9 @@
 </div>
 <aside class="notes">
 <p><strong>P16 · Prune before GPU execution · 11:05–11:45</strong></p>
-<p>These checks also help us save GPU trials. We have 353 checks across seven modules. In this sparse GEMM sweep, we start with 480 configurations, and only 102 remain viable. So about 79 percent are pruned before GPU execution, mostly due to register and shared-memory limits.</p>
-<p>And the feedback matters for performance too. Replacing structured feedback with generic errors reduces throughput by 14.9 percent in the sparse GEMM ablation.</p>
-<p>The reason is that tuning time is limited. More time spent guessing how to fix a program means fewer chances to find a faster kernel.</p>
+<p>These checks also help us narrow the search before using the GPU. Candidates that exceed resource limits can be rejected early, with feedback telling the agent what to change.</p>
+<p>As you can see here, many invalid configurations are removed at this stage. The harness then checks correctness and measures performance for the remaining candidates.</p>
+<p>So the compiler is part of the tuning loop: it helps the agent spend less time debugging invalid programs and more time finding faster kernels.</p>
 </aside>
 </section>
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -3224,9 +3226,8 @@
 </div>
 <aside class="notes">
 <p><strong>P19 · Thank you · 13:00–13:30</strong></p>
-<p>So the main idea is to make the language and compiler fit this iterative tuning process. Compact code helps the agent keep its history, explicit controls let it try optimizations, and useful feedback helps it repair mistakes.</p>
-<p>CroqTile is open source, and you can see five accepted works using it here. Please feel free to scan the code and have a look.</p>
-<p>That is all from me. Thank you, and happy to take your questions.</p>
+<p>So the main idea is to make the language and compiler fit this iterative tuning process. Compact code helps the agent keep its history, explicit controls let it try optimizations, and reinforce the compiler checks and provide useful feedback helps the agent can repair mistakes accurately.</p>
+<p>This language CroqTile is now open sourced, you can have to look if interested. And with this project, we have five accepted works here, that either describes the design of croqtile, or using croqtile for kernel programming. Please feel free to scan the code and have a try.</p>
 </aside>
 </section></div>
 </div>

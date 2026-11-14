@@ -64,12 +64,6 @@
 .reveal .tune-explain { border-top: 1px solid var(--line); padding-top: 20px; gap: 16px; }
 .reveal .tune-explain b { font-size: 20px; }
 .reveal .pipe-row { font-size: 18px; padding: 14px 0; }
-.reveal .axis-names { font-size: 21px; }
-.reveal .axis-focus { background: #eaf3ef; border-color: #94b9ac; display: grid; grid-template-columns: 66px 1fr; gap: 4px 14px; }
-.reveal .axis-focus .panel-label { grid-row: 1 / 3; }
-.reveal .axis-focus .axis-names { font-size: 19px; }
-.reveal .axis-detail { grid-column: 2; font-size: 15px; line-height: 1.3; margin: 0; color: var(--ink-2); }
-.reveal .axis-detail b { color: var(--accent-deep); }
 .reveal .agt-fig img { height: 100%; object-fit: contain; }
 .reveal .agt-fig p { flex: none; font-size: 16px; }
 .reveal .pit-solo .pit-fail, .reveal .pit-solo .pit-give {
@@ -207,7 +201,6 @@
 .reveal .codesign-overview .talk-points,
 .reveal .loop-notes .talk-points { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
 .reveal .codesign-overview .talk-points li { font-size: 18px; }
-.reveal .axis-focus { display: flex; gap: 14px; }
 .reveal #slide-14 .key-points { gap: 42px; }
 .reveal #slide-15 .key-points { gap: 24px; }
 .reveal #slide-15 .kp-t { font-size: 18px; }
@@ -228,3 +221,4 @@
 .reveal .competition-qr { display: block; width: 265px; margin: 0 auto; }
 .reveal .competition-qr img { display: block; width: 265px; height: 265px; image-rendering: pixelated; max-width: none; max-height: none; margin: 0; border: 0; box-shadow: none; }
 .reveal .competition-qr-caption { margin: 12px 0 5px; font-size: 16px; line-height: 1.35; color: var(--ink); }
+
